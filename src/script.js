@@ -12,7 +12,7 @@ const the_carousel = () => {
 
     arrowIcons = document.querySelectorAll(".wrapper i");
 
-    let isDragStart = false, prevPageX, prevScrollLeft;
+    let isDragStart = false, isDragging = false, prevPageX, prevScrollLeft, positionDiff;
     
     const showHideIcons = () => {
         //Showing and hiding prev/next icon acording to carousel scroll left value
@@ -48,10 +48,34 @@ const the_carousel = () => {
         }); 
     });
 
+    const autoSlide = () => {
+        // if there is no image left to scroll then return from here
+        if(carousel.scrollLeft == (carousel.scrollWidth - carousel.clientWidth)) return;
+
+
+        positionDiff = Math.abs(positionDiff);
+        let firstImgWidth = firstImg.clientWidth + 14; // making positionDiff value to positive
+        //getting diference value that needs to add or reduce from carousel left to take middle img center
+        let valDifference = firstImgWidth - positionDiff;
+
+        if(carousel.scrollLeft > prevScrollLeft){ // if user is scrolling to the right
+            return carousel.scrollLeft += positionDiff > firstImgWidth / 3 ? valDifference : -positionDiff;
+            /*ALTERNATIVE
+            if(positionDiff > firstImgWidth / 3){
+                carousel.scrollLeft += valDifference;
+            } else {
+                carousel.scrollLeft -= positionDiff
+            }
+            */
+        }
+        // if user is scrolling to the left
+        carousel.scrollLeft -= positionDiff > firstImgWidth / 3 ? valDifference : -positionDiff;
+    }
+
     const dragStart = (e) => {
         // updatating global variables value on mouse down event
         isDragStart = true;
-        prevPageX = e.pageX;
+        prevPageX = e.pageX || e.touches[0].pageX;
         prevScrollLeft = carousel.scrollLeft;
     }
 
@@ -59,8 +83,9 @@ const the_carousel = () => {
         // scrolling images/carousel to left acording to mouse pointer
         if(!isDragStart) return;
         e.preventDefault();
+        isDragging = true;
         carousel.classList.add("dragging");
-        let positionDiff = e.pageX - prevPageX
+        positionDiff = (e.pageX || e.touches[0].pageX) - prevPageX
         carousel.scrollLeft = prevScrollLeft - positionDiff;
         showHideIcons();
     }
@@ -68,11 +93,20 @@ const the_carousel = () => {
     const dragStop = () => {
         isDragStart = false;
         carousel.classList.remove("dragging");
+
+        if(!isDragging) return;
+        isDragging = false;
+        autoSlide();
     }
 
     carousel.addEventListener("mousedown", dragStart);
+    carousel.addEventListener("touchstart", dragStart);
+
     carousel.addEventListener("mousemove", dragging);
+    carousel.addEventListener("touchmove", dragging);
+
     carousel.addEventListener("mouseup", dragStop);
     carousel.addEventListener("mouseleave", dragStop);
+    carousel.addEventListener("touchend", dragStop);
 
 }
